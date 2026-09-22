@@ -46,10 +46,15 @@ with st.sidebar:
             for attempt in range(3):
                 try:
                     response = gemini_client.models.generate_content(
-                        model="gemini-3.6-flash",
+                        model="gemini-3.5-flash-lite",
                         contents=[prompt, image],
                     )
                     break
+                except genai_errors.ClientError as e:
+                    if "RESOURCE_EXHAUSTED" in str(e):
+                        last_error = "quota"
+                        break  # daily quota hit, retrying won't help
+                    raise
                 except genai_errors.ServerError as e:
                     last_error = e
                     if attempt < 2:
@@ -57,6 +62,13 @@ with st.sidebar:
             if response is not None:
                 st.session_state.roster_text = response.text
                 st.success("Roster extracted.")
+            elif last_error == "quota":
+                st.error(
+                    "The free daily limit for the roster-reading service has been reached. "
+                    "It resets at midnight (Pacific time, so roughly mid-morning UAE time). "
+                    "Please try again after it resets, or reduce how many times you re-extract "
+                    "the same roster while testing."
+                )
             else:
                 st.error(
                     "The roster-reading service is temporarily busy (high demand on their end, "
