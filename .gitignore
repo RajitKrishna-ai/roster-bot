@@ -1,4 +1,4 @@
-# Secrets - NEVER upload
+# Secrets
 .env
 .env.*
 !.env.example
